@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  LayoutDashboard, Truck, Users, FileText, 
+  LayoutDashboard, Truck, Users, 
   BrainCircuit, Zap, ArrowLeft, Bell, 
-  Wrench, Shield, Fuel, Navigation, Mic, Plus, Clipboard
+  Wrench, Shield, Fuel, Navigation, Mic
 } from 'lucide-react';
 
 const UI_THEME = {
@@ -16,11 +16,10 @@ function App() {
   const [activeLayer, setActiveLayer] = useState('DASHBOARD');
   const [opSubView, setOpSubView] = useState('WORLD'); 
 
-  // --- LIVE DATA STORE ---
   const [inputRate, setInputRate] = useState('');
   const [inputMiles, setInputMiles] = useState('');
   
-  const [fleet] = useState({
+  const fleetData = {
     drivers: [
       { id: 'D-01', name: 'Mike S.', status: 'Active', phone: '555-0101' },
       { id: 'D-02', name: 'Sarah L.', status: 'Resetting', phone: '555-0102' }
@@ -32,7 +31,7 @@ function App() {
     maintenance: [
       { unit: '101', service: 'Oil Change', status: 'Upcoming', date: 'Feb 10' }
     ]
-  });
+  };
 
   const calculateProfitability = (rate, miles) => {
     if (!rate || !miles) return { label: 'AWAITING DATA', color: '#94a3b8' };
@@ -111,6 +110,11 @@ function App() {
               <div style={{background: currentGrade.color, color:'#fff', padding:'20px', borderRadius:'10px', textAlign:'center', marginTop:'15px'}}>
                 <strong>{currentGrade.label}</strong>
               </div>
+              {currentGrade.needsHaggle && (
+                <button onClick={() => alert('Haggle Initiated')} style={{ marginTop: '10px', width: '100%', background: UI_THEME.ai, color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                  <Mic size={16}/> Haggle
+                </button>
+              )}
             </div>
           )}
 
@@ -118,8 +122,8 @@ function App() {
             <div>
               <button onClick={() => setOpSubView('WORLD')} style={styles.backLink}>← Back</button>
               <table style={styles.table}>
-                <thead><tr><th>UNIT</th><th>MAKE</th><th>TYPE</th></tr></thead>
-                <tbody>{fleet.equipment.map(e => <tr key={e.id}><td>{e.id}</td><td>{e.make}</td><td>{e.type}</td></tr>)}</tbody>
+                <thead><tr><th style={styles.th}>UNIT</th><th style={styles.th}>MAKE</th><th style={styles.th}>TYPE</th></tr></thead>
+                <tbody>{fleetData.equipment.map(e => <tr key={e.id}><td style={styles.td}>{e.id}</td><td style={styles.td}>{e.make}</td><td style={styles.td}>{e.type}</td></tr>)}</tbody>
               </table>
             </div>
           )}
@@ -128,8 +132,8 @@ function App() {
             <div>
               <button onClick={() => setOpSubView('WORLD')} style={styles.backLink}>← Back</button>
               <table style={styles.table}>
-                <thead><tr><th>NAME</th><th>STATUS</th><th>PHONE</th></tr></thead>
-                <tbody>{fleet.drivers.map(d => <tr key={d.id}><td>{d.name}</td><td>{d.status}</td><td>{d.phone}</td></tr>)}</tbody>
+                <thead><tr><th style={styles.th}>NAME</th><th style={styles.th}>STATUS</th><th style={styles.th}>PHONE</th></tr></thead>
+                <tbody>{fleetData.drivers.map(d => <tr key={d.id}><td style={styles.td}>{d.name}</td><td style={styles.td}>{d.status}</td><td style={styles.td}>{d.phone}</td></tr>)}</tbody>
               </table>
             </div>
           )}
@@ -138,8 +142,8 @@ function App() {
             <div>
               <button onClick={() => setOpSubView('WORLD')} style={styles.backLink}>← Back</button>
               <table style={styles.table}>
-                <thead><tr><th>UNIT</th><th>SERVICE</th><th>STATUS</th></tr></thead>
-                <tbody>{fleet.maintenance.map((m, i) => <tr key={i}><td>{m.unit}</td><td>{m.service}</td><td>{m.status}</td></tr>)}</tbody>
+                <thead><tr><th style={styles.th}>UNIT</th><th style={styles.th}>SERVICE</th><th style={styles.th}>STATUS</th></tr></thead>
+                <tbody>{fleetData.maintenance.map((m, i) => <tr key={i}><td style={styles.td}>{m.unit}</td><td style={styles.td}>{m.service}</td><td style={styles.td}>{m.status}</td></tr>)}</tbody>
               </table>
             </div>
           )}
@@ -148,7 +152,7 @@ function App() {
             <div style={{textAlign:'center', marginTop:'50px'}}>
               <BrainCircuit size={60} color={UI_THEME.ai} />
               <h2>Command Center Active</h2>
-              <p>Fleet Intelligence Sync Complete.</p>
+              <p>Ready for review.</p>
             </div>
           )}
         </section>
@@ -160,8 +164,10 @@ function App() {
 const styles = {
   worldCard: { background: '#fff', padding: '30px', borderRadius: '15px', cursor: 'pointer', textAlign: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' },
   backLink: { background: 'none', border: 'none', color: UI_THEME.accent, cursor: 'pointer', marginBottom: '10px' },
-  input: { width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '8px', border: '1px solid #ddd' },
-  table: { width: '100%', background: '#fff', borderRadius: '10px', borderCollapse: 'collapse', textAlign: 'left' }
+  input: { width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' },
+  table: { width: '100%', background: '#fff', borderRadius: '10px', borderCollapse: 'collapse', textAlign: 'left' },
+  th: { padding: '12px', borderBottom: '2px solid #eee' },
+  td: { padding: '12px', borderBottom: '1px solid #eee' }
 };
 
 export default App;
