@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  LayoutDashboard, Truck, Users, FileText, AlertTriangle, 
-  BrainCircuit, Zap, CheckCircle, Clock, Sun, Moon, 
-  ArrowLeft, Save, DollarSign, ChevronRight, Bell, 
-  LogOut, MessageSquare, Search, Wrench, Shield, 
-  Fuel, Activity, Download, Map as MapIcon, PhoneCall, Globe, CloudRain,
-  Mic, Settings, UserCheck, TrendingUp, Navigation, Mail
+  LayoutDashboard, Truck, Users, FileText, 
+  BrainCircuit, Zap, ArrowLeft, Bell, 
+  Wrench, Shield, Fuel, Navigation, Mic
 } from 'lucide-react';
 
 const UI_THEME = {
@@ -19,7 +16,6 @@ function App() {
   const [activeLayer, setActiveLayer] = useState('DASHBOARD');
   const [opSubView, setOpSubView] = useState('WORLD'); 
 
-  // --- AI ENGINE: CALCULATE DIAMOND/GOLD/SILVER ---
   const calculateProfitability = (rate, miles) => {
     const fuelPrice = 4.10; 
     const mpg = 6.5;
@@ -78,7 +74,7 @@ function App() {
         <div style={{ padding: '25px', fontSize: '20px', fontWeight: 'bold' }}>BLACKTOP AI</div>
         <nav style={{ flex: 1, paddingTop: '20px' }}>
           <NavBtn icon={<LayoutDashboard size={20}/>} label="Command Center" active={activeLayer === 'DASHBOARD'} onClick={() => setActiveLayer('DASHBOARD')} />
-          <NavBtn icon={<Globe size={20}/>} label="Operations World" active={activeLayer === 'OPERATIONS'} onClick={() => {setActiveLayer('OPERATIONS'); setOpSubView('WORLD');}} />
+          <NavBtn icon={<Navigation size={20}/>} label="Operations World" active={activeLayer === 'OPERATIONS'} onClick={() => {setActiveLayer('OPERATIONS'); setOpSubView('WORLD');}} />
           <NavBtn icon={<Fuel size={20}/>} label="Fuel & Audit" active={activeLayer === 'FUEL'} onClick={() => setActiveLayer('FUEL')} />
           <NavBtn icon={<FileText size={20}/>} label="Accounting" active={activeLayer === 'ACCOUNTING'} onClick={() => setActiveLayer('ACCOUNTING')} />
           <NavBtn icon={<Shield size={20}/>} label="Compliance" active={activeLayer === 'COMPLIANCE'} onClick={() => setActiveLayer('COMPLIANCE')} />
@@ -129,7 +125,9 @@ function App() {
                         <td><span style={{background: grade.color, color:'#fff', padding:'4px 10px', borderRadius:'20px', fontSize:'11px', fontWeight:'bold'}}>{grade.label}</span></td>
                         <td>
                           {grade.needsHaggle && (
-                            <button onClick={() => handleHaggle(l.id)} style={{background: UI_THEME.ai, color:'#fff', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer'}}>Haggle</button>
+                            <button onClick={() => handleHaggle(l.id)} style={{background: UI_THEME.ai, color:'#fff', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer', display: 'flex', alignItems: 'center', gap: '5px'}}>
+                              <Mic size={14}/> Haggle
+                            </button>
                           )}
                         </td>
                       </tr>
