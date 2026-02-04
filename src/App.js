@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   LayoutDashboard, Truck, Users, FileText, 
   BrainCircuit, Zap, ArrowLeft, Bell, 
-  Wrench, Shield, Fuel, Navigation, Mic
+  Wrench, Shield, Fuel, Navigation, Mic, Plus
 } from 'lucide-react';
 
 const UI_THEME = {
@@ -16,7 +16,12 @@ function App() {
   const [activeLayer, setActiveLayer] = useState('DASHBOARD');
   const [opSubView, setOpSubView] = useState('WORLD'); 
 
+  // --- LIVE INPUT STATE ---
+  const [inputRate, setInputRate] = useState('');
+  const [inputMiles, setInputMiles] = useState('');
+
   const calculateProfitability = (rate, miles) => {
+    if (!rate || !miles) return { label: 'WAITING', color: '#94a3b8' };
     const fuelPrice = 4.10; 
     const mpg = 6.5;
     const driverPay = miles * 0.60;
@@ -29,15 +34,10 @@ function App() {
     return { label: 'SILVER', color: '#94a3b8', needsHaggle: true };
   };
 
-  const [data] = useState({ 
-    loads: [
-      { id: 'L-4022', customer: 'CH Robinson', origin: 'Laredo, TX', dest: 'Chicago, IL', rate: 3200, miles: 1350, appt: '14:00', currentEta: '15:30', status: 'LATE' },
-      { id: 'L-4023', customer: 'TQL', origin: 'Atlanta, GA', dest: 'Miami, FL', rate: 1600, miles: 660, appt: '08:00', currentEta: '07:15', status: 'ON-TIME' }
-    ]
-  });
+  const currentGrade = calculateProfitability(Number(inputRate), Number(inputMiles));
 
-  const handleHaggle = (loadId) => {
-    alert(`Blacktop AI: Initiating Haggle. Calculating required rate for Diamond margin... Message sent to Broker.`);
+  const handleHaggle = () => {
+    alert(`Blacktop AI: Sending automated negotiation. Requesting rate increase to hit 25% Diamond margin.`);
   };
 
   const NavBtn = ({ icon, label, active, onClick }) => (
@@ -57,11 +57,12 @@ function App() {
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           <header style={{ marginBottom: '30px', textAlign: 'center' }}>
             <BrainCircuit size={40} color={UI_THEME.ai} style={{ marginBottom: '15px' }} />
-            <h1 style={{ fontSize: '28px' }}>Tactical Briefing</h1>
+            <h1 style={{ fontSize: '28px' }}>Blacktop AI Briefing</h1>
           </header>
-          <div onClick={() => setView('TERMINAL')} style={{ background: '#1e293b', padding: '25px', borderRadius: '15px', border: '1px solid #334155', cursor: 'pointer', textAlign: 'center' }}>
-            <h2>Enter Terminal</h2>
-            <p style={{color: '#94a3b8'}}>All systems synced. AI Route Scouter is live.</p>
+          <div onClick={() => setView('TERMINAL')} style={{ background: '#1e293b', padding: '40px', borderRadius: '15px', border: '1px solid #334155', cursor: 'pointer', textAlign: 'center' }}>
+            <Zap size={48} color={UI_THEME.ai} style={{marginBottom: '20px'}} />
+            <h2>Enter Command Center</h2>
+            <p style={{color: '#94a3b8'}}>Ready to analyze live market loads.</p>
           </div>
         </div>
       </div>
@@ -94,11 +95,11 @@ function App() {
           
           {activeLayer === 'OPERATIONS' && opSubView === 'WORLD' && (
             <div style={{ textAlign: 'center' }}>
-               <div style={{ background: '#1e293b', height: '400px', borderRadius: '25px', marginBottom: '30px', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+               <div style={{ background: '#1e293b', height: '300px', borderRadius: '25px', marginBottom: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                   <div style={{textAlign:'center'}}>
                     <Navigation size={48} color={UI_THEME.accent} />
-                    <h2>Active Intelligence Map</h2>
-                    <p>Motive + OpenWeather Sync Active</p>
+                    <h2>Active Fleet World</h2>
+                    <p>Live Weather & ELD Overlays</p>
                   </div>
                </div>
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
@@ -111,30 +112,32 @@ function App() {
           )}
 
           {activeLayer === 'OPERATIONS' && opSubView === 'LOADS' && (
-            <div>
+            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
               <button onClick={() => setOpSubView('WORLD')} style={styles.backLink}>← Back to World</button>
-              <table style={styles.mainTable}>
-                <thead><tr style={{background:'#f8f9fa'}}><th style={{padding:'15px'}}>ID</th><th>ROUTE</th><th>PROFIT GRADE</th><th>ACTION</th></tr></thead>
-                <tbody>
-                  {data.loads.map(l => {
-                    const grade = calculateProfitability(l.rate, l.miles);
-                    return (
-                      <tr key={l.id} style={{borderBottom:'1px solid #eee'}}>
-                        <td style={{padding:'15px', fontWeight:'bold'}}>{l.id}</td>
-                        <td>{l.origin} → {l.dest}</td>
-                        <td><span style={{background: grade.color, color:'#fff', padding:'4px 10px', borderRadius:'20px', fontSize:'11px', fontWeight:'bold'}}>{grade.label}</span></td>
-                        <td>
-                          {grade.needsHaggle && (
-                            <button onClick={() => handleHaggle(l.id)} style={{background: UI_THEME.ai, color:'#fff', border:'none', padding:'6px 12px', borderRadius:'6px', cursor:'pointer', display: 'flex', alignItems: 'center', gap: '5px'}}>
-                              <Mic size={14}/> Haggle
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div style={{ background: '#fff', padding: '30px', borderRadius: '20px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
+                <h3 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '10px' }}><Plus size={20} color={UI_THEME.accent}/> New Load Analysis</h3>
+                
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={styles.label}>Broker Rate ($)</label>
+                  <input type="number" value={inputRate} onChange={(e) => setInputRate(e.target.value)} placeholder="e.g. 3500" style={styles.input} />
+                </div>
+
+                <div style={{ marginBottom: '30px' }}>
+                  <label style={styles.label}>Total Miles</label>
+                  <input type="number" value={inputMiles} onChange={(e) => setInputMiles(e.target.value)} placeholder="e.g. 1200" style={styles.input} />
+                </div>
+
+                <div style={{ padding: '20px', borderRadius: '12px', background: '#f8f9fa', textAlign: 'center', border: '1px solid #eee' }}>
+                  <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px', fontWeight: 'bold' }}>AI PROFIT GRADE</div>
+                  <div style={{ fontSize: '24px', fontWeight: '900', color: currentGrade.color }}>{currentGrade.label}</div>
+                  
+                  {currentGrade.needsHaggle && (
+                    <button onClick={handleHaggle} style={{ marginTop: '15px', width: '100%', background: UI_THEME.ai, color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                      <Mic size={18}/> Haggle for Diamond
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -142,7 +145,7 @@ function App() {
              <div style={{textAlign:'center', marginTop:'100px'}}>
                <BrainCircuit size={64} color={UI_THEME.ai} />
                <h2>Blacktop AI is Online</h2>
-               <p>SaaS Infrastructure Ready for Global Scale.</p>
+               <p>Logic Core: Ready for Partners.</p>
              </div>
           )}
         </section>
@@ -153,8 +156,9 @@ function App() {
 
 const styles = {
   worldCard: { background: '#fff', padding: '25px', borderRadius: '20px', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', textAlign: 'center' },
-  mainTable: { width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: '12px', overflow: 'hidden' },
   backLink: { background: 'none', border: 'none', color: UI_THEME.accent, cursor: 'pointer', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '5px' },
+  label: { display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' },
+  input: { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '16px', boxSizing: 'border-box' }
 };
 
 export default App;
