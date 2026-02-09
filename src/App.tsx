@@ -1,16 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 // Room types locked to Dom's requirements
 type RoomName = 'Command Center' | 'Control Tower' | 'Driver Management' | 'Maintenance Hub' | 'Compliance Room' | 'Accounting' | 'CRM' | 'Fuel' | 'Fleet Live GPS';
 
 const BlacktopOS: React.FC = () => {
   const [activeRoom, setActiveRoom] = useState<RoomName>('Command Center');
-
-  // NEURAL ENGINE (JAKE) - Functional logic preserved
-  const runJakeAudit = (data: any) => {
-    console.log("Jake is auditing logic...");
-    // Future integration for neural voice triggers
-  };
 
   const renderRoom = () => {
     switch(activeRoom) {
@@ -23,7 +17,6 @@ const BlacktopOS: React.FC = () => {
                 + ADD NEW LOAD
               </button>
             </div>
-            {/* FULL COLUMNS AS REQUESTED: ETA, GPS, 10-DAY HISTORY */}
             <div style={{ backgroundColor: '#111', borderRadius: '8px', border: '1px solid #333', overflow: 'hidden' }}>
               <table style={{ width: '100%', textAlign: 'left', color: '#00FF00', borderCollapse: 'collapse' }}>
                 <thead>
@@ -39,7 +32,7 @@ const BlacktopOS: React.FC = () => {
                 </thead>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid #222' }}>
-                    <td style={{ padding: '15px' }}><span style={{ color: '#00FF00', animation: 'pulse 2s infinite' }}>● ACTIVE</span></td>
+                    <td style={{ padding: '15px' }}><span style={{ color: '#00FF00' }}>● ACTIVE</span></td>
                     <td style={{ padding: '15px', fontWeight: 'bold' }}>BT-9422</td>
                     <td style={{ padding: '15px' }}>CHI &rarr; DAL</td>
                     <td style={{ padding: '15px' }}>Marcus V. / Unit 502</td>
@@ -77,18 +70,18 @@ const BlacktopOS: React.FC = () => {
           <div style={{ padding: '30px', color: '#00FF00' }}>
             <div style={{ border: '1px solid #00FF00', padding: '30px', borderRadius: '12px', marginBottom: '30px' }}>
               <h3 style={{ fontWeight: '900', marginBottom: '15px' }}>NEURAL STATUS (JAKE)</h3>
-              <p style={{ color: '#fff', fontSize: '14px' }}>"System audit complete. Carrier ID 71d05620 identified. All rooms functional. Neural audit is active and monitoring all dispatch logs."</p>
+              <p style={{ color: '#fff', fontSize: '14px' }}>"System audit complete. Carrier ID 71d05620 identified. All rooms functional. Neural audit is active."</p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div style={{ border: '1px solid #333', padding: '20px', borderRadius: '8px' }}>
                 <h4 style={{ fontSize: '12px', marginBottom: '10px', color: '#555' }}>COMMAND CENTER REVIEW</h4>
-                <p>{"&gt; GPS TRACKING: SAMSARA READY"}</p>
-                <p>{"&gt; 10-DAY HISTORY: ACTIVE"}</p>
+                <p>{"- GPS TRACKING: SAMSARA READY"}</p>
+                <p>{"- 10-DAY HISTORY: ACTIVE"}</p>
               </div>
               <div style={{ border: '1px solid #333', padding: '20px', borderRadius: '8px' }}>
                 <h4 style={{ fontSize: '12px', marginBottom: '10px', color: '#555' }}>SYSTEM LOGS</h4>
-                <p>{"&gt; FUEL MODULE: STABILIZED"}</p>
-                <p>{"&gt; GATEKEEPER: ONLINE"}</p>
+                <p>{"- FUEL MODULE: STABILIZED"}</p>
+                <p>{"- GATEKEEPER: ONLINE"}</p>
               </div>
             </div>
           </div>
@@ -97,8 +90,7 @@ const BlacktopOS: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: '"Courier New", Courier, monospace' }}>
-      {/* SIDEBAR NAVIGATION - ALL ROOMS PRESERVED */}
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: 'monospace' }}>
       <div style={{ width: '280px', borderRight: '1px solid #222', padding: '30px', display: 'flex', flexDirection: 'column' }}>
         <h1 style={{ color: '#00FF00', fontWeight: '900', fontSize: '28px', marginBottom: '50px', letterSpacing: '-2px' }}>BLACKTOP OS</h1>
         <nav style={{ flex: 1 }}>
@@ -122,17 +114,14 @@ const BlacktopOS: React.FC = () => {
           ))}
         </nav>
         <div style={{ borderTop: '1px solid #222', paddingTop: '20px', fontSize: '10px', color: '#333' }}>
-          NEURAL ENGINE V37.2 | JAKE FUNCTIONAL
+          NEURAL ENGINE V37.3 | JAKE ACTIVE
         </div>
       </div>
 
-      {/* MAIN CONTENT AREA */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <header style={{ padding: '20px 30px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#050505' }}>
           <h2 style={{ textTransform: 'uppercase', fontWeight: '900', letterSpacing: '2px' }}>{activeRoom}</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <span style={{ fontSize: '9px', color: '#00FF00', border: '1px solid #00FF00', padding: '4px 12px', borderRadius: '50px' }}>SECURE SESSION</span>
-          </div>
+          <span style={{ fontSize: '9px', color: '#00FF00', border: '1px solid #00FF00', padding: '4px 12px', borderRadius: '50px' }}>SECURE SESSION</span>
         </header>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {renderRoom()}
