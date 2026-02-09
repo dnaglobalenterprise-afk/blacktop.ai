@@ -10,16 +10,14 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [room, setRoom] = useState('Command Center');
   const [loads, setLoads] = useState<any[]>([]);
-  const [selectedLoad, setSelectedLoad] = useState<any>(null); // DRILL-DOWN STATE
+  const [selectedLoad, setSelectedLoad] = useState<any>(null); 
   const [jakeCommand, setJakeCommand] = useState('');
 
   const colors = { accent: '#32CD32', bg: '#000', sidebar: '#0a0a0a', border: '#1a1a1a', card: '#111' };
 
-  // --- LIVE DATA SYNC ---
   useEffect(() => {
     if (isLoggedIn) {
       const fetchData = async () => {
-        // Fetching loads from Papi's database table
         const { data } = await supabase.from('loads').select('*').order('created_at', { ascending: false });
         if (data) setLoads(data);
       };
@@ -27,7 +25,6 @@ export default function App() {
     }
   }, [isLoggedIn, room]);
 
-  // --- JAKE NEURAL EXECUTION ---
   const executeJake = async (cmd: string) => {
     if (!cmd) return;
     const { error } = await supabase.from('jake_commands').insert([{ instruction: cmd, status: 'pending' }]);
@@ -42,7 +39,7 @@ export default function App() {
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
         <div style={{ border: `2px solid ${colors.accent}`, padding: '80px', textAlign: 'center' }}>
           <h1 style={{ color: colors.accent, letterSpacing: '20px', fontSize: '50px', margin: 0 }}>BLACKTOP</h1>
-          <p style={{ color: '#444', marginBottom: '40px' }}>SOVEREIGN OS v25 // JAKE & PAPI READY</p>
+          <p style={{ color: '#444', marginBottom: '40px' }}>SOVEREIGN OS v26 // JAKE & PAPI READY</p>
           <button onClick={() => setIsLoggedIn(true)} style={authBtnStyle}>SYSTEM AUTHORIZATION</button>
         </div>
       </div>
@@ -52,7 +49,7 @@ export default function App() {
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#000', color: '#fff', fontFamily: 'monospace' }}>
       
-      {/* SIDEBAR: 10 MODULES LOCKED */}
+      {/* SIDEBAR */}
       <div style={{ width: '280px', background: colors.sidebar, borderRight: `1px solid ${colors.border}`, padding: '20px', display: 'flex', flexDirection: 'column' }}>
         <h2 style={{ color: colors.accent, marginBottom: '30px' }}>BLACKTOP OS</h2>
         <div style={{ flex: 1 }}>
@@ -66,7 +63,6 @@ export default function App() {
           ))}
         </div>
         
-        {/* JAKE SIDEBAR INTERFACE */}
         <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: '20px' }}>
           <p style={{ color: colors.accent, fontSize: '10px', marginBottom: '10px' }}>NEURAL COMMAND (JAKE)</p>
           <input value={jakeCommand} onChange={(e) => setJakeCommand(e.target.value)} style={jakeInputStyle} placeholder="Talk to Jake..." />
@@ -74,7 +70,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* WORKSPACE AREA */}
+      {/* WORKSPACE */}
       <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
         <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px' }}>
           <h1 style={{fontSize: '24px'}}>{room.toUpperCase()}</h1>
@@ -84,32 +80,31 @@ export default function App() {
           </div>
         </header>
 
-        {/* 1. COMMAND CENTER (JAKE'S MAIN HUB) */}
+        {/* 1. COMMAND CENTER (FIXED SYNTAX FOR JAKE) */}
         {room === 'Command Center' && (
           <div style={neuralTerminalStyle}>
             <h2 style={{ color: colors.accent }}>NEURAL TERMINAL (JAKE)</h2>
             <div style={terminalLogStyle}>
-              <p>> SYSTEM: ONLINE</p>
-              <p>> DATABASE: CONNECTED (PAPI ENGINE ACTIVE)</p>
-              <p>> WAITING FOR NEURAL INSTRUCTIONS...</p>
+              <p>{' > '} SYSTEM: ONLINE</p>
+              <p>{' > '} DATABASE: CONNECTED (PAPI ENGINE ACTIVE)</p>
+              <p>{' > '} WAITING FOR NEURAL INSTRUCTIONS...</p>
             </div>
           </div>
         )}
 
-        {/* 2. CONTROL TOWER (LOAD BOARD + DRILL-DOWN) */}
+        {/* 2. CONTROL TOWER (DRILL-DOWN ACTIVE) */}
         {room === 'Control Tower' && (
           <div>
             {selectedLoad ? (
               <div style={drillDownBoxStyle}>
-                <button onClick={() => setSelectedLoad(null)} style={backBtnStyle}> ➔ BACK TO LOAD BOARD</button>
+                <button onClick={() => setSelectedLoad(null)} style={backBtnStyle}> {' < '} BACK TO LOAD BOARD</button>
                 <h2 style={{color: colors.accent}}>LOAD #{selectedLoad.load_number} - DRILL DOWN</h2>
                 <div style={detailGridStyle}>
                   <div style={statBoxStyle}><strong>CUSTOMER:</strong> {selectedLoad.customer_name}</div>
                   <div style={statBoxStyle}><strong>RATE:</strong> ${selectedLoad.rate}</div>
                   <div style={statBoxStyle}><strong>ORIGIN:</strong> {selectedLoad.origin_city_state}</div>
                   <div style={statBoxStyle}><strong>DESTINATION:</strong> {selectedLoad.destination_city_state}</div>
-                  <div style={statBoxStyle}><strong>ETA:</strong> CALCULATING...</div>
-                  <div style={statBoxStyle}><strong>STATUS:</strong> IN-TRANSIT</div>
+                  <div style={statBoxStyle}><strong>STATUS:</strong> ACTIVE</div>
                 </div>
               </div>
             ) : (
@@ -132,7 +127,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 3. FLEET LIVE GPS (10-DAY HISTORY) */}
+        {/* 3. FLEET LIVE GPS */}
         {room === 'Fleet LIVE GPS' && (
           <div style={{ height: '70vh', background: '#050505', border: '1px solid #222', padding: '20px' }}>
             <h3 style={{ color: colors.accent }}>LIVE TRACKING ENGINE</h3>
@@ -142,7 +137,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 4. DRIVER/MAINTENANCE/COMPLIANCE/ACCOUNTING/CRM/FUEL (READY ROOMS) */}
+        {/* 4. OTHER ROOMS */}
         {!['Command Center', 'Control Tower', 'Fleet LIVE GPS'].includes(room) && (
           <div style={readyRoomStyle}>
             <h2 style={{ color: colors.accent }}>{room.toUpperCase()} MODULE</h2>
@@ -154,7 +149,7 @@ export default function App() {
   );
 }
 
-// --- CSS-IN-JS STYLING ---
+// --- STYLES (NO CHANGES HERE) ---
 const authBtnStyle = { background: '#32CD32', color: '#000', border: 'none', padding: '20px 40px', fontWeight: 'bold' as any, cursor: 'pointer' };
 const navItemStyle = (active: boolean, acc: string) => ({ padding: '12px', color: active ? acc : '#555', cursor: 'pointer', borderLeft: active ? `3px solid ${acc}` : 'none', background: active ? '#111' : 'transparent', fontSize: '11px', marginBottom: '4px' });
 const jakeInputStyle = { width: '100%', background: '#111', border: '1px solid #333', color: '#fff', padding: '8px', fontSize: '11px' };
