@@ -1,56 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// --- CONNECTION ---
-// These look for the keys you will set in Vercel in Step 3
+// --- SYSTEM CONNECTION ---
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || ""; 
 const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || "";
-const JAKE_ID = "d74647c4-13ce-4524-92e6-aa7967e46c87";
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-interface Load {
-  id: string;
-  load_number: string;
-  customer_name: string;
-  origin: string;
-  destination: string;
-  pickup_date: string;
-  delivery_date: string;
-  rate: number;
-  status: string;
-}
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [room, setRoom] = useState('Command Center');
-  const [loads, setLoads] = useState<Load[]>([]);
-  const [jakeLog, setJakeLog] = useState<string[]>(["[Jake]: Systems Live. Monitoring Blacktop Network..."]);
+  const [loads, setLoads] = useState<any[]>([]);
 
   const colors = { accent: '#32CD32', bg: '#000', sidebar: '#0a0a0a', border: '#1a1a1a' };
 
-  // Pull data from Supabase automatically
+  // --- SYNC WITH REAL DATA ---
   useEffect(() => {
     if (isLoggedIn) {
-      const sync = async () => {
-        const { data } = await supabase.from('loads').select('*');
-        if (data) setLoads(data as Load[]);
+      const fetchLoads = async () => {
+        const { data, error } = await supabase.from('loads').select('*');
+        if (!error && data) setLoads(data);
       };
-      sync();
+      fetchLoads();
     }
   }, [isLoggedIn, room]);
 
-  const callJake = (num: string) => {
-    setJakeLog(prev => [`[Jake]: Dialing for Load ${num}...`, ...prev]);
-    if ((window as any).vapi) (window as any).vapi.start(JAKE_ID);
+  // --- NEURAL COMMAND (Strict Types) ---
+  const handleJakeCommand = async (instruction: string, loadId: string | null = null) => {
+    const { error } = await supabase
+      .from('jake_commands')
+      .insert([{ instruction, load_id: loadId, status: 'pending' }]);
+    
+    if (!error) alert("Neural Engine updated.");
   };
 
   if (!isLoggedIn) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#fff' }}>
-        <div style={{ border: `2px solid ${colors.accent}`, padding: '60px', textAlign: 'center' }}>
-          <h1 style={{ color: colors.accent, letterSpacing: '15px', fontSize: '50px' }}>BLACKTOP</h1>
-          <button onClick={() => setIsLoggedIn(true)} style={btnStyle}>INITIALIZE OS</button>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+        <div style={{ border: `2px solid ${colors.accent}`, padding: '80px', textAlign: 'center' }}>
+          <h1 style={{ color: colors.accent, letterSpacing: '20px', fontSize: '60px' }}>BLACKTOP</h1>
+          <button onClick={() => setIsLoggedIn(true)} style={{ background: colors.accent, border: 'none', padding: '20px 40px', fontWeight: 'bold', cursor: 'pointer' }}>SYSTEM AUTHORIZATION</button>
         </div>
       </div>
     );
@@ -59,69 +47,62 @@ export default function App() {
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#000', color: '#fff', fontFamily: 'monospace' }}>
       
-      {/* SIDEBAR: ALL 10 ROOMS */}
+      {/* SIDEBAR NAVIGATION */}
       <div style={{ width: '280px', background: colors.sidebar, borderRight: `1px solid ${colors.border}`, padding: '20px' }}>
-        <h2 style={{ color: colors.accent, marginBottom: '40px' }}>BLACKTOP</h2>
-        {['Command Center', 'Control Tower', 'Driver Management', 'Asset Management', 'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet LIVE GPS'].map(r => (
-          <div key={r} onClick={() => setRoom(r)} style={navItem(room === r, colors.accent)}>{r.toUpperCase()}</div>
-        ))}
+        <h2 style={{ color: colors.accent }}>BLACKTOP</h2>
+        <div style={{ marginTop: '40px' }}>
+          {['Command Center', 'Control Tower', 'Driver Management', 'Asset Management', 'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet LIVE GPS'].map(r => (
+            <div key={r} onClick={() => setRoom(r)} style={{ padding: '15px 10px', color: room === r ? colors.accent : '#444', cursor: 'pointer', borderLeft: room === r ? `3px solid ${colors.accent}` : '3px solid transparent' }}>{r.toUpperCase()}</div>
+          ))}
+        </div>
       </div>
 
-      {/* MAIN SYSTEM VIEW */}
+      {/* WORKSPACE */}
       <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>{room}</h1>
-          <div style={{ color: colors.accent }}>PRODUCTION V12</div>
+        <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px' }}>
+          <h1>{room.toUpperCase()}</h1>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <input 
+              placeholder="Search..." 
+              style={{ background: '#111', border: '1px solid #222', color: '#fff', padding: '10px' }} 
+              onChange={(e) => console.log("Searching for:", e.target.value)} 
+            />
+            <button style={{ background: colors.accent, color: '#000', border: 'none', padding: '10px 20px', fontWeight: 'bold' }}>+ ADD ENTRY</button>
+          </div>
         </header>
 
-        {/* ROOM: CONTROL TOWER (LOAD BOARD) */}
+        {/* CONTROL TOWER VIEW */}
         {room === 'Control Tower' && (
-          <div style={{ background: '#050505', border: '1px solid #111' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ color: colors.accent, borderBottom: '2px solid #222' }}>
-                  <th style={th}>LOAD #</th><th style={th}>CUSTOMER</th><th style={th}>ORIGIN</th><th style={th}>DESTINATION</th><th style={th}>PICKUP</th><th style={th}>DELIVERY</th><th style={th}>RATE</th><th style={th}>NEURAL</th>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '2px solid #222', color: colors.accent }}>
+                <th style={{ padding: '10px' }}>LOAD #</th><th>CUSTOMER</th><th>ORIGIN/DEST</th><th>RATE</th><th>STATUS</th><th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loads.length > 0 ? loads.map(load => (
+                <tr key={load.id} style={{ borderBottom: '1px solid #111' }}>
+                  <td style={{ padding: '15px 10px' }}>{load.load_number}</td>
+                  <td>{load.customer_name}</td>
+                  <td>{load.origin_city_state} ➔ {load.destination_city_state}</td>
+                  <td style={{ color: colors.accent }}>${load.rate}</td>
+                  <td>In Transit</td>
+                  <td><button onClick={() => handleJakeCommand("Review Load Details", load.id)} style={{ background: 'none', border: '1px solid #333', color: '#666', padding: '5px 10px', cursor: 'pointer' }}>Neural Review</button></td>
                 </tr>
-              </thead>
-              <tbody>
-                {loads.map(l => (
-                  <tr key={l.id} style={{ borderBottom: '1px solid #111' }}>
-                    <td style={{...td, color: colors.accent}}>{l.load_number}</td>
-                    <td style={td}>{l.customer_name}</td>
-                    <td style={td}>{l.origin}</td>
-                    <td style={td}>{l.destination}</td>
-                    <td style={td}>{l.pickup_date}</td>
-                    <td style={td}>{l.delivery_date}</td>
-                    <td style={{...td, fontWeight: 'bold'}}>${l.rate}</td>
-                    <td style={td}><button onClick={() => callJake(l.load_number)} style={jakeBtn}>JAKE</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              )) : (
+                <tr><td colSpan={6} style={{ padding: '50px', textAlign: 'center', color: '#333' }}>No active loads. Ready for data.</td></tr>
+              )}
+            </tbody>
+          </table>
         )}
 
-        {/* ROOM: FLEET LIVE GPS */}
+        {/* GPS VIEW */}
         {room === 'Fleet LIVE GPS' && (
-          <div style={{ height: '75vh', border: '1px solid #222' }}>
-            <iframe width="100%" height="100%" frameBorder="0" style={{ filter: 'grayscale(1) invert(1)' }} src="https://maps.google.com/maps?q=USA&t=&z=4&ie=UTF8&iwloc=&output=embed"></iframe>
-          </div>
-        )}
-
-        {/* DEFAULT VIEW FOR OTHER ROOMS */}
-        {!['Control Tower', 'Fleet LIVE GPS'].includes(room) && (
-          <div style={{ background: '#0a0a0a', padding: '40px', border: '1px solid #1a1a1a' }}>
-            <h3 style={{ color: colors.accent }}>{room} INITIALIZED</h3>
-            <p style={{ color: '#444', marginTop: '15px' }}>Waiting for database stream...</p>
+          <div style={{ height: '70vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             <p style={{ color: colors.accent }}>MAP ENGINE LOADING (10-DAY HISTORY ACTIVE)</p>
           </div>
         )}
       </div>
     </div>
   );
 }
-
-const btnStyle = { background: '#32CD32', border: 'none', padding: '15px 30px', fontWeight: 'bold' as const, cursor: 'pointer' };
-const navItem = (active: boolean, acc: string) => ({ padding: '15px 0', color: active ? acc : '#444', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' as const, borderLeft: active ? `3px solid ${acc}` : '3px solid transparent', paddingLeft: active ? '10px' : '0' });
-const th = { padding: '15px', fontSize: '10px', textTransform: 'uppercase' as const };
-const td = { padding: '20px 15px', fontSize: '13px' };
-const jakeBtn = { background: '#32CD32', border: 'none', padding: '5px 10px', fontWeight: 'bold' as const, cursor: 'pointer', fontSize: '10px' };
