@@ -36,56 +36,60 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AgentControl = void 0;
-var react_1 = require("react");
-var axios_1 = require("axios");
-var AgentControl = function (_a) {
-    var activeTarget = _a.activeTarget;
-    var handleAction = function () { return __awaiter(void 0, void 0, void 0, function () {
-        var err_1;
+var client_1 = require("@prisma/client");
+var prisma = new client_1.PrismaClient();
+function main() {
+    return __awaiter(this, void 0, void 0, function () {
+        var email, carrier;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!activeTarget) {
-                        alert("Select a driver or broker first!");
-                        return [2 /*return*/];
-                    }
-                    _a.label = 1;
+                    email = 'dom@blacktop.local';
+                    return [4 /*yield*/, prisma.carrier.upsert({
+                            where: { name: 'Blacktop Logistics' },
+                            update: {},
+                            create: {
+                                name: 'Blacktop Logistics',
+                                dotNumber: '0000000',
+                            },
+                        })];
                 case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, axios_1.default.post('http://localhost:3000/send-action', {
-                            target: activeTarget,
-                            message: "System Alert: Compliance check required for ".concat(activeTarget)
+                    carrier = _a.sent();
+                    // 2. Now create the User linked to that Carrier
+                    return [4 /*yield*/, prisma.user.upsert({
+                            where: { email: 'dcortez5924@gmail.com' }, // e.g., 'owner@defy.com'
+                            update: {},
+                            create: {
+                                email: 'dcortez5924@gmail.com',
+                                name: 'Owner',
+                                password: 'March2022',
+                                role: client_1.UserRole.OWNER,
+                                carrier: {
+                                    connect: { id: carrier.id } // connect by the upserted carrier's id
+                                },
+                            },
                         })];
                 case 2:
+                    // 2. Now create the User linked to that Carrier
                     _a.sent();
-                    alert("\u2705 AI Agent successfully sent email regarding ".concat(activeTarget));
-                    return [3 /*break*/, 4];
-                case 3:
-                    err_1 = _a.sent();
-                    alert("Failed to trigger AI action.");
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+                    console.log('✅ Seed complete: Carrier created and Owner linked.');
+                    return [2 /*return*/];
             }
         });
-    }); };
-    return (<div style={{ padding: '20px', background: '#000', border: '1px solid #00ff00', borderRadius: '8px' }}>
-      <h2 style={{ color: '#00ff00', marginTop: 0 }}>AI Agent Action Center</h2>
-      <p style={{ color: '#fff' }}>
-        Currently focused on: <span style={{ color: '#00ff00' }}>{activeTarget || 'None'}</span>
-      </p>
-      <button onClick={handleAction} style={{
-            width: '100%',
-            padding: '15px',
-            background: '#00ff00',
-            color: '#000',
-            border: 'none',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            borderRadius: '4px'
-        }}>
-        SEND COMPLIANCE EMAIL
-      </button>
-    </div>);
-};
-exports.AgentControl = AgentControl;
+    });
+}
+main()
+    .catch(function (e) {
+    console.error('❌ Seed failed', e);
+    process.exit(1);
+})
+    .finally(function () { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, prisma.$disconnect()];
+            case 1:
+                _a.sent();
+                return [2 /*return*/];
+        }
+    });
+}); });

@@ -1,88 +1,127 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { AgentControl } from './components/AgentControl';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
-const MapView: React.FC<{ driver?: any }> = ({ driver }) => (
-  <div style={{ height: '300px', background: '#0a0a0a', border: '1px solid #333', borderRadius: '8px', position: 'relative', overflow: 'hidden', marginBottom: '20px' }}>
-    <div style={{ position: 'absolute', color: '#00ff00', padding: '10px', fontSize: '10px', fontFamily: 'monospace' }}>
-      LIVE GPS FEED_V2.0
-    </div>
-    {/* 🗺️ Simple Map Placeholder with "moving" truck logic */}
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#00ff00', textAlign: 'center' }}>
-        {driver ? (
-          <div>
-            <div style={{ fontSize: '24px' }}>🚚</div>
-            <p>{driver.name} - EN ROUTE</p>
-            <p style={{ fontSize: '10px' }}>LAT: {driver.last_lat || '35.22'} | LNG: {driver.last_lng || '-80.84'}</p>
-          </div>
-        ) : (
-          <p style={{ color: '#444' }}>SEARCH A DRIVER TO TRACK LOCATION</p>
-        )}
-      </div>
-    </div>
-  </div>
-);
+// --- CONNECTION ---
+// These look for the keys you will set in Vercel in Step 3
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || ""; 
+const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || "";
+const JAKE_ID = "d74647c4-13ce-4524-92e6-aa7967e46c87";
 
-function App() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState<any>(null);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await axios.get(`http://localhost:3000/search?q=${searchTerm}`);
-      setResults(res.data);
-    } catch (err) {
-      alert("API Connection Lost.");
+interface Load {
+  id: string;
+  load_number: string;
+  customer_name: string;
+  origin: string;
+  destination: string;
+  pickup_date: string;
+  delivery_date: string;
+  rate: number;
+  status: string;
+}
+
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [room, setRoom] = useState('Command Center');
+  const [loads, setLoads] = useState<Load[]>([]);
+  const [jakeLog, setJakeLog] = useState<string[]>(["[Jake]: Systems Live. Monitoring Blacktop Network..."]);
+
+  const colors = { accent: '#32CD32', bg: '#000', sidebar: '#0a0a0a', border: '#1a1a1a' };
+
+  // Pull data from Supabase automatically
+  useEffect(() => {
+    if (isLoggedIn) {
+      const sync = async () => {
+        const { data } = await supabase.from('loads').select('*');
+        if (data) setLoads(data as Load[]);
+      };
+      sync();
     }
+  }, [isLoggedIn, room]);
+
+  const callJake = (num: string) => {
+    setJakeLog(prev => [`[Jake]: Dialing for Load ${num}...`, ...prev]);
+    if ((window as any).vapi) (window as any).vapi.start(JAKE_ID);
   };
 
-  const activeTarget = results?.drivers?.[0]?.name || results?.customers?.[0]?.name;
+  if (!isLoggedIn) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#fff' }}>
+        <div style={{ border: `2px solid ${colors.accent}`, padding: '60px', textAlign: 'center' }}>
+          <h1 style={{ color: colors.accent, letterSpacing: '15px', fontSize: '50px' }}>BLACKTOP</h1>
+          <button onClick={() => setIsLoggedIn(true)} style={btnStyle}>INITIALIZE OS</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ backgroundColor: '#000', minHeight: '100vh', padding: '20px', color: 'white', fontFamily: 'sans-serif' }}>
-      <h1 style={{ color: '#00ff00', textAlign: 'center', textShadow: '0 0 10px #00ff00' }}>BLACKTOP AI COMMAND</h1>
+    <div style={{ display: 'flex', height: '100vh', background: '#000', color: '#fff', fontFamily: 'monospace' }}>
       
-      <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-        <form onSubmit={handleSearch}>
-          <input 
-            type="text" 
-            placeholder="Search Fleet or Brokers..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '50%', padding: '12px', background: '#111', color: '#00ff00', border: '1px solid #00ff00' }}
-          />
-          <button type="submit" style={{ padding: '12px 24px', background: '#00ff00', fontWeight: 'bold', cursor: 'pointer' }}>INITIATE SEARCH</button>
-        </form>
+      {/* SIDEBAR: ALL 10 ROOMS */}
+      <div style={{ width: '280px', background: colors.sidebar, borderRight: `1px solid ${colors.border}`, padding: '20px' }}>
+        <h2 style={{ color: colors.accent, marginBottom: '40px' }}>BLACKTOP</h2>
+        {['Command Center', 'Control Tower', 'Driver Management', 'Asset Management', 'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet LIVE GPS'].map(r => (
+          <div key={r} onClick={() => setRoom(r)} style={navItem(room === r, colors.accent)}>{r.toUpperCase()}</div>
+        ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '20px' }}>
-        <div style={{ flex: 2 }}>
-          <MapView driver={results?.drivers?.[0]} />
-          
-          <div style={{ padding: '20px', background: '#111', border: '1px solid #333', borderRadius: '8px' }}>
-            <h3 style={{ color: '#00ff00', marginTop: 0 }}>Active Compliance Monitor</h3>
-            {results?.drivers?.[0] ? (
-              <div>
-                <p>Driver: {results.drivers[0].name}</p>
-                <p>Incidents: {results.drivers[0].incidents}</p>
-              </div>
-            ) : <p>Standing by...</p>}
-          </div>
-        </div>
+      {/* MAIN SYSTEM VIEW */}
+      <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>{room}</h1>
+          <div style={{ color: colors.accent }}>PRODUCTION V12</div>
+        </header>
 
-        <div style={{ flex: 1 }}>
-          <AgentControl activeTarget={activeTarget} />
-          <div style={{ marginTop: '20px', padding: '15px', border: '1px dashed #444', fontSize: '12px' }}>
-            <p style={{ color: '#00ff00' }}>AI THOUGHT LOG:</p>
-            <p>&gt; Monitoring weather patterns in Midwest...</p>
-            <p>&gt; {results?.drivers?.[0] ? `Analyzing safety risk for ${results.drivers[0].name}...` : 'Ready for input...'}</p>
+        {/* ROOM: CONTROL TOWER (LOAD BOARD) */}
+        {room === 'Control Tower' && (
+          <div style={{ background: '#050505', border: '1px solid #111' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ color: colors.accent, borderBottom: '2px solid #222' }}>
+                  <th style={th}>LOAD #</th><th style={th}>CUSTOMER</th><th style={th}>ORIGIN</th><th style={th}>DESTINATION</th><th style={th}>PICKUP</th><th style={th}>DELIVERY</th><th style={th}>RATE</th><th style={th}>NEURAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loads.map(l => (
+                  <tr key={l.id} style={{ borderBottom: '1px solid #111' }}>
+                    <td style={{...td, color: colors.accent}}>{l.load_number}</td>
+                    <td style={td}>{l.customer_name}</td>
+                    <td style={td}>{l.origin}</td>
+                    <td style={td}>{l.destination}</td>
+                    <td style={td}>{l.pickup_date}</td>
+                    <td style={td}>{l.delivery_date}</td>
+                    <td style={{...td, fontWeight: 'bold'}}>${l.rate}</td>
+                    <td style={td}><button onClick={() => callJake(l.load_number)} style={jakeBtn}>JAKE</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
+
+        {/* ROOM: FLEET LIVE GPS */}
+        {room === 'Fleet LIVE GPS' && (
+          <div style={{ height: '75vh', border: '1px solid #222' }}>
+            <iframe width="100%" height="100%" frameBorder="0" style={{ filter: 'grayscale(1) invert(1)' }} src="https://maps.google.com/maps?q=USA&t=&z=4&ie=UTF8&iwloc=&output=embed"></iframe>
+          </div>
+        )}
+
+        {/* DEFAULT VIEW FOR OTHER ROOMS */}
+        {!['Control Tower', 'Fleet LIVE GPS'].includes(room) && (
+          <div style={{ background: '#0a0a0a', padding: '40px', border: '1px solid #1a1a1a' }}>
+            <h3 style={{ color: colors.accent }}>{room} INITIALIZED</h3>
+            <p style={{ color: '#444', marginTop: '15px' }}>Waiting for database stream...</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-export default App;
+const btnStyle = { background: '#32CD32', border: 'none', padding: '15px 30px', fontWeight: 'bold' as const, cursor: 'pointer' };
+const navItem = (active: boolean, acc: string) => ({ padding: '15px 0', color: active ? acc : '#444', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' as const, borderLeft: active ? `3px solid ${acc}` : '3px solid transparent', paddingLeft: active ? '10px' : '0' });
+const th = { padding: '15px', fontSize: '10px', textTransform: 'uppercase' as const };
+const td = { padding: '20px 15px', fontSize: '13px' };
+const jakeBtn = { background: '#32CD32', border: 'none', padding: '5px 10px', fontWeight: 'bold' as const, cursor: 'pointer', fontSize: '10px' };
