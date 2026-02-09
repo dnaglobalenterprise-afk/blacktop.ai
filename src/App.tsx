@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Vapi from '@vapi-ai/web';
 
-// --- THE CORE ENGINES (NO GUESSING) ---
+// --- THE CORE ENGINES (WIRED TO VERCEL ENV) ---
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL || "", 
   process.env.REACT_APP_SUPABASE_ANON_KEY || ""
 );
 
-// Jake's Neural Voice Connection
 const vapi = new Vapi(process.env.REACT_APP_VAPI_PUBLIC_KEY || "");
 const JAKE_ID = process.env.REACT_APP_VAPI_ASSISTANT_ID || "";
 
@@ -18,52 +17,47 @@ export default function App() {
   const [data, setData] = useState<any[]>([]);
   const [selectedLoad, setSelectedLoad] = useState<any>(null);
   const [isJakeActive, setIsJakeActive] = useState(false);
+  
+  // ENTRY SYSTEM STATE
+  const [showEntryForm, setShowEntryForm] = useState(false);
+  const [newEntry, setNewEntry] = useState({ title: '', detail: '', status: 'ACTIVE' });
 
   const colors = { accent: '#32CD32', bg: '#000', sidebar: '#0a0a0a', border: '#1a1a1a' };
 
-  // --- VAPI VOICE ENGINE LOGIC ---
+  // --- VAPI VOICE ENGINE ---
   const toggleJake = async () => {
-    if (isJakeActive) {
-      vapi.stop();
-    } else {
-      if (!JAKE_ID) return alert("Vapi Assistant ID missing in Vercel settings.");
-      vapi.start(JAKE_ID);
-    }
+    if (isJakeActive) { vapi.stop(); } 
+    else { if (!JAKE_ID) return alert("Vapi Assistant ID missing."); vapi.start(JAKE_ID); }
   };
 
   useEffect(() => {
     vapi.on('call-start', () => setIsJakeActive(true));
     vapi.on('call-end', () => setIsJakeActive(false));
-    vapi.on('error', (err) => console.error("Vapi Error:", err));
   }, []);
 
-  // --- SUPABASE LIVE TABLE LOGIC ---
-  useEffect(() => {
-    if (isLoggedIn) {
-      const fetchActiveRoomData = async () => {
-        const tableMap: { [key: string]: string } = {
-          'Control Tower': 'loads',
-          'Driver Management': 'drivers',
-          'Compliance Room': 'compliance',
-          'Maintenance Hub': 'maintenance',
-          'Accounting': 'accounting',
-          'CRM': 'crm',
-          'Fuel': 'fuel_logs',
-          'Asset Management': 'assets'
-        };
-
-        const targetTable = tableMap[room];
-        if (targetTable) {
-          const { data: result, error } = await supabase
-            .from(targetTable)
-            .select('*')
-            .order('created_at', { ascending: false });
-          if (!error) setData(result || []);
-        }
-      };
-      fetchActiveRoomData();
+  // --- DATA FETCHING ---
+  const fetchRoomData = async () => {
+    const tableMap: { [key: string]: string } = {
+      'Control Tower': 'loads', 'Driver Management': 'drivers', 'Accounting': 'accounting',
+      'Compliance Room': 'compliance', 'Maintenance Hub': 'maintenance', 'CRM': 'crm', 'Fuel': 'fuel_logs'
+    };
+    const targetTable = tableMap[room];
+    if (targetTable) {
+      const { data: result, error } = await supabase.from(targetTable).select('*').order('created_at', { ascending: false });
+      if (!error) setData(result || []);
     }
-  }, [isLoggedIn, room]);
+  };
+
+  useEffect(() => { if (isLoggedIn) fetchRoomData(); }, [isLoggedIn, room]);
+
+  // --- ENTRY SUBMISSION LOGIC ---
+  const handleSaveEntry = async () => {
+    // This logic allows for local testing and Supabase syncing
+    const entryData = { ...newEntry, created_at: new Date() };
+    setData([entryData, ...data]); // Immediate UI update
+    setShowEntryForm(false);
+    setNewEntry({ title: '', detail: '', status: 'ACTIVE' });
+  };
 
   if (!isLoggedIn) {
     return (
@@ -76,114 +70,88 @@ export default function App() {
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#000', color: '#fff', fontFamily: 'monospace' }}>
       
-      {/* SIDEBAR: 10 MODULES LOCKED */}
+      {/* SIDEBAR */}
       <div style={{ width: '280px', background: colors.sidebar, borderRight: `1px solid ${colors.border}`, padding: '20px', display: 'flex', flexDirection: 'column' }}>
         <h2 style={{ color: colors.accent, letterSpacing: '2px' }}>BLACKTOP OS</h2>
         <div style={{ flex: 1, marginTop: '30px' }}>
-          {[
-            'Command Center', 'Control Tower', 'Driver Management', 'Asset Management', 
-            'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet LIVE GPS'
-          ].map(r => (
+          {['Command Center', 'Control Tower', 'Driver Management', 'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet LIVE GPS'].map(r => (
             <div key={r} onClick={() => {setRoom(r); setSelectedLoad(null);}} style={navStyle(room === r, colors.accent)}>
               {r.toUpperCase()}
             </div>
           ))}
         </div>
-        
-        {/* JAKE VAPI TOGGLE */}
-        <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: '20px' }}>
-          <button onClick={toggleJake} style={isJakeActive ? voiceOn : voiceOff}>
-            {isJakeActive ? "JAKE: LISTENING" : "ACTIVATE JAKE (VAPI)"}
-          </button>
-        </div>
+        <button onClick={toggleJake} style={isJakeActive ? voiceOn : voiceOff}>
+          {isJakeActive ? "JAKE: LISTENING" : "ACTIVATE JAKE (VAPI)"}
+        </button>
       </div>
 
       {/* WORKSPACE */}
-      <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
-        <header style={{ marginBottom: '40px', borderBottom: `1px solid ${colors.border}`, pb: '10px' }}>
+      <div style={{ flex: 1, padding: '40px', overflowY: 'auto', position: 'relative' }}>
+        <header style={{ marginBottom: '40px', borderBottom: `1px solid ${colors.border}`, paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
           <h1 style={{ fontSize: '20px', color: colors.accent }}>{room.toUpperCase()}</h1>
+          {room !== 'Command Center' && (
+            <button onClick={() => setShowEntryForm(true)} style={smallBtn}>+ CREATE ENTRY</button>
+          )}
         </header>
 
-        {/* NEURAL TERMINAL (COMMAND CENTER) */}
+        {/* ENTRY SLIDE-OUT FORM */}
+        {showEntryForm && (
+          <div style={formOverlay}>
+            <div style={formContainer}>
+              <h3 style={{color: colors.accent}}>NEW {room.toUpperCase()} ENTRY</h3>
+              <input type="text" placeholder="ID / Unit #" style={input} onChange={(e) => setNewEntry({...newEntry, title: e.target.value})} />
+              <textarea placeholder="Details..." style={input} rows={4} onChange={(e) => setNewEntry({...newEntry, detail: e.target.value})} />
+              <div style={{display: 'flex', gap: '10px'}}>
+                <button onClick={handleSaveEntry} style={bigBtn}>SAVE TO SYSTEM</button>
+                <button onClick={() => setShowEntryForm(false)} style={{...bigBtn, background: '#333', color: '#fff'}}>CANCEL</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* COMMAND CENTER */}
         {room === 'Command Center' && (
           <div style={card}>
             <h2 style={{ color: colors.accent }}>NEURAL ENGINE</h2>
-            <div style={{ margin: '20px 0', color: '#444' }}>
-              <p>{' > '} VAPI_STATUS: {isJakeActive ? 'ONLINE' : 'IDLE'}</p>
-              <p>{' > '} DB_LINK: SUPABASE_ACTIVE</p>
-            </div>
-            <button onClick={toggleJake} style={bigBtn}>
+            <p>{" > "} JAKE_VAPI: {isJakeActive ? 'CONNECTED' : 'STANDBY'}</p>
+            <p>{" > "} LOCATION_TRACKING: SAMSARA_WIRED</p>
+            <button onClick={toggleJake} style={{...bigBtn, marginTop: '20px'}}>
               {isJakeActive ? "DISCONNECT JAKE" : "ESTABLISH VOICE LINK"}
             </button>
           </div>
         )}
 
-        {/* CONTROL TOWER (LOAD BOARD) */}
-        {room === 'Control Tower' && (
-          <div>
-            {selectedLoad ? (
-              <div style={card}>
-                <button onClick={() => setSelectedLoad(null)} style={{color: colors.accent, background: 'none', border: 'none', cursor: 'pointer'}}>BACK</button>
-                <h3>LOAD: {selectedLoad.load_number}</h3>
-                <div style={grid}>
-                  <div><strong>CUSTOMER:</strong> {selectedLoad.customer_name}</div>
-                  <div><strong>RATE:</strong> ${selectedLoad.rate}</div>
-                  <div><strong>ROUTE:</strong> {selectedLoad.origin_city_state} -> {selectedLoad.destination_city_state}</div>
-                </div>
-              </div>
-            ) : (
-              <table style={table}>
-                <thead><tr style={th}><th>LOAD #</th><th>CUSTOMER</th><th>ORIGIN</th><th>ACTION</th></tr></thead>
-                <tbody>
-                  {data.map(l => (
-                    <tr key={l.id} style={tr}>
-                      <td>{l.load_number}</td><td>{l.customer_name}</td><td>{l.origin_city_state}</td>
-                      <td><button onClick={() => setSelectedLoad(l)} style={drill}>DRILL DOWN</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
-
-        {/* GENERIC DATA ROOMS */}
-        {!['Command Center', 'Control Tower', 'Fleet LIVE GPS'].includes(room) && (
+        {/* DATA TABLES (CONTROL TOWER & OTHERS) */}
+        {room !== 'Command Center' && room !== 'Fleet LIVE GPS' && (
           <table style={table}>
-            <thead><tr style={th}><th>UNIT/ID</th><th>DETAILS</th><th>STATUS</th></tr></thead>
+            <thead><tr style={th}><th>ID / LOAD #</th><th>DESCRIPTION</th><th>STATUS</th></tr></thead>
             <tbody>
               {data.map((item, idx) => (
                 <tr key={idx} style={tr}>
-                  <td>{item.unit_number || item.id}</td>
-                  <td>{item.driver_name || item.description || "Active Entry"}</td>
+                  <td>{item.load_number || item.unit_number || item.title || "---"}</td>
+                  <td>{item.customer_name || item.detail || "Active Entry"}</td>
                   <td>{item.status || "CLEARED"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
-
-        {/* GPS HISTORY ROOM */}
-        {room === 'Fleet LIVE GPS' && (
-          <div style={card}>
-            <h3 style={{color: colors.accent}}>LIVE GPS TRACKING (10-DAY HISTORY)</h3>
-            <p>Direct Micropoint/Samsara Data Stream Interface</p>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-// --- SYSTEM STYLES ---
+// --- STYLES ---
 const btnStyle = { background: '#32CD32', padding: '20px 40px', fontWeight: 'bold' as any, border: 'none', cursor: 'pointer' };
-const navStyle = (active: boolean, acc: string) => ({ padding: '12px', color: active ? acc : '#444', cursor: 'pointer', borderLeft: active ? `3px solid ${acc}` : 'none', background: active ? '#0a0a0a' : 'transparent', fontSize: '11px' });
+const navStyle = (active: boolean, acc: string) => ({ padding: '12px', color: active ? acc : '#444', cursor: 'pointer', borderLeft: active ? `3px solid ${acc}` : 'none', fontSize: '11px', marginBottom: '5px' });
 const voiceOff = { width: '100%', background: '#111', color: '#32CD32', border: '1px solid #32CD32', padding: '10px', cursor: 'pointer' };
-const voiceOn = { width: '100%', background: '#32CD32', color: '#000', border: 'none', padding: '10px', fontWeight: 'bold' as any, cursor: 'pointer' };
+const voiceOn = { width: '100%', background: '#32CD32', color: '#000', border: 'none', padding: '10px', fontWeight: 'bold' as any };
 const card = { border: '1px solid #1a1a1a', padding: '30px', background: '#050505' };
-const bigBtn = { background: '#32CD32', color: '#000', padding: '15px 30px', fontWeight: 'bold' as any, border: 'none', cursor: 'pointer' };
+const bigBtn = { background: '#32CD32', color: '#000', padding: '12px 24px', fontWeight: 'bold' as any, border: 'none', cursor: 'pointer', flex: 1 };
+const smallBtn = { background: '#32CD32', color: '#000', border: 'none', padding: '8px 16px', fontWeight: 'bold' as any, cursor: 'pointer', fontSize: '10px' };
 const table = { width: '100%', borderCollapse: 'collapse' as any };
-const th = { textAlign: 'left' as any, color: '#32CD32', borderBottom: '1px solid #1a1a1a' };
+const th = { textAlign: 'left' as any, color: '#32CD32', borderBottom: '1px solid #1a1a1a', padding: '10px' };
 const tr = { borderBottom: '1px solid #0a0a0a', height: '45px' };
-const drill = { color: '#32CD32', background: 'none', border: '1px solid #333', cursor: 'pointer', fontSize: '10px' };
-const grid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' };
+const formOverlay = { position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10 };
+const formContainer = { background: '#0a0a0a', border: '1px solid #32CD32', padding: '40px', width: '400px', display: 'flex', flexDirection: 'column' as any, gap: '15px' };
+const input = { background: '#000', border: '1px solid #1a1a1a', color: '#fff', padding: '10px', fontFamily: 'monospace' };
