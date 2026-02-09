@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Vapi from '@vapi-ai/web';
 
-// --- THE CORE ENGINES (WIRED TO VERCEL ENV) ---
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL || "", 
   process.env.REACT_APP_SUPABASE_ANON_KEY || ""
@@ -17,14 +16,11 @@ export default function App() {
   const [data, setData] = useState<any[]>([]);
   const [selectedLoad, setSelectedLoad] = useState<any>(null);
   const [isJakeActive, setIsJakeActive] = useState(false);
-  
-  // ENTRY SYSTEM STATE
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [newEntry, setNewEntry] = useState({ title: '', detail: '', status: 'ACTIVE' });
 
   const colors = { accent: '#32CD32', bg: '#000', sidebar: '#0a0a0a', border: '#1a1a1a' };
 
-  // --- VAPI VOICE ENGINE ---
   const toggleJake = async () => {
     if (isJakeActive) { vapi.stop(); } 
     else { if (!JAKE_ID) return alert("Vapi Assistant ID missing."); vapi.start(JAKE_ID); }
@@ -35,8 +31,8 @@ export default function App() {
     vapi.on('call-end', () => setIsJakeActive(false));
   }, []);
 
-  // --- DATA FETCHING ---
-  const fetchRoomData = async () => {
+  // Fixed with useCallback to satisfy ESLint build rules
+  const fetchRoomData = useCallback(async () => {
     const tableMap: { [key: string]: string } = {
       'Control Tower': 'loads', 'Driver Management': 'drivers', 'Accounting': 'accounting',
       'Compliance Room': 'compliance', 'Maintenance Hub': 'maintenance', 'CRM': 'crm', 'Fuel': 'fuel_logs'
@@ -46,15 +42,13 @@ export default function App() {
       const { data: result, error } = await supabase.from(targetTable).select('*').order('created_at', { ascending: false });
       if (!error) setData(result || []);
     }
-  };
+  }, [room]);
 
-  useEffect(() => { if (isLoggedIn) fetchRoomData(); }, [isLoggedIn, room]);
+  useEffect(() => { if (isLoggedIn) fetchRoomData(); }, [isLoggedIn, fetchRoomData]);
 
-  // --- ENTRY SUBMISSION LOGIC ---
   const handleSaveEntry = async () => {
-    // This logic allows for local testing and Supabase syncing
     const entryData = { ...newEntry, created_at: new Date() };
-    setData([entryData, ...data]); // Immediate UI update
+    setData([entryData, ...data]);
     setShowEntryForm(false);
     setNewEntry({ title: '', detail: '', status: 'ACTIVE' });
   };
@@ -94,7 +88,6 @@ export default function App() {
           )}
         </header>
 
-        {/* ENTRY SLIDE-OUT FORM */}
         {showEntryForm && (
           <div style={formOverlay}>
             <div style={formContainer}>
@@ -109,7 +102,7 @@ export default function App() {
           </div>
         )}
 
-        {/* COMMAND CENTER */}
+        {/* NEURAL ENGINE */}
         {room === 'Command Center' && (
           <div style={card}>
             <h2 style={{ color: colors.accent }}>NEURAL ENGINE</h2>
@@ -121,27 +114,43 @@ export default function App() {
           </div>
         )}
 
-        {/* DATA TABLES (CONTROL TOWER & OTHERS) */}
-        {room !== 'Command Center' && room !== 'Fleet LIVE GPS' && (
+        {/* CONTROL TOWER - Logic used to prevent ESLint Error */}
+        {room === 'Control Tower' && selectedLoad && (
+           <div style={card}>
+             <button onClick={() => setSelectedLoad(null)} style={{color: colors.accent, background: 'none', border: 'none', cursor: 'pointer', marginBottom: '10px'}}>{"< BACK"}</button>
+             <h3>LOAD: {selectedLoad.load_number || selectedLoad.title}</h3>
+             <p>{selectedLoad.detail || "Load details currently in sync..."}</p>
+           </div>
+        )}
+
+        {/* DATA TABLES */}
+        {room !== 'Command Center' && room !== 'Fleet LIVE GPS' && !selectedLoad && (
           <table style={table}>
-            <thead><tr style={th}><th>ID / LOAD #</th><th>DESCRIPTION</th><th>STATUS</th></tr></thead>
+            <thead><tr style={th}><th>ID / LOAD #</th><th>DESCRIPTION</th><th>STATUS</th><th>ACTION</th></tr></thead>
             <tbody>
               {data.map((item, idx) => (
                 <tr key={idx} style={tr}>
                   <td>{item.load_number || item.unit_number || item.title || "---"}</td>
                   <td>{item.customer_name || item.detail || "Active Entry"}</td>
                   <td>{item.status || "CLEARED"}</td>
+                  <td><button onClick={() => setSelectedLoad(item)} style={smallBtn}>DRILL</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
+
+        {room === 'Fleet LIVE GPS' && (
+          <div style={card}>
+            <h3 style={{color: colors.accent}}>LIVE GPS TRACKING (10-DAY HISTORY)</h3>
+            <p>Direct Micropoint/Samsara Data Stream Interface</p>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// --- STYLES ---
 const btnStyle = { background: '#32CD32', padding: '20px 40px', fontWeight: 'bold' as any, border: 'none', cursor: 'pointer' };
 const navStyle = (active: boolean, acc: string) => ({ padding: '12px', color: active ? acc : '#444', cursor: 'pointer', borderLeft: active ? `3px solid ${acc}` : 'none', fontSize: '11px', marginBottom: '5px' });
 const voiceOff = { width: '100%', background: '#111', color: '#32CD32', border: '1px solid #32CD32', padding: '10px', cursor: 'pointer' };
