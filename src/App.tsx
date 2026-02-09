@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
+// --- SYSTEM CORE: SECURE CONNECTION ---
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || ""; 
 const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || "";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -9,14 +10,16 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [room, setRoom] = useState('Command Center');
   const [loads, setLoads] = useState<any[]>([]);
+  const [selectedLoad, setSelectedLoad] = useState<any>(null); // DRILL-DOWN STATE
   const [jakeCommand, setJakeCommand] = useState('');
-  const [newEntry, setNewEntry] = useState<any>({});
 
-  const colors = { accent: '#32CD32', bg: '#000', sidebar: '#0a0a0a', border: '#1a1a1a' };
+  const colors = { accent: '#32CD32', bg: '#000', sidebar: '#0a0a0a', border: '#1a1a1a', card: '#111' };
 
+  // --- LIVE DATA SYNC ---
   useEffect(() => {
     if (isLoggedIn) {
       const fetchData = async () => {
+        // Fetching loads from Papi's database table
         const { data } = await supabase.from('loads').select('*').order('created_at', { ascending: false });
         if (data) setLoads(data);
       };
@@ -24,24 +27,24 @@ export default function App() {
     }
   }, [isLoggedIn, room]);
 
-  const handleSystemSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    let table = room === 'Control Tower' ? 'loads' : room === 'Fuel' ? 'fuel_logs' : 'general_logs';
-    const { error } = await supabase.from(table).insert([newEntry]);
-    if (!error) { alert(`SYSTEM: Committed to ${table}.`); setNewEntry({}); }
-  };
-
-  const executeJake = async () => {
-    if (!jakeCommand) return;
-    await supabase.from('jake_commands').insert([{ instruction: jakeCommand, status: 'pending' }]);
-    alert(`JAKE: Processing Instruction...`);
-    setJakeCommand('');
+  // --- JAKE NEURAL EXECUTION ---
+  const executeJake = async (cmd: string) => {
+    if (!cmd) return;
+    const { error } = await supabase.from('jake_commands').insert([{ instruction: cmd, status: 'pending' }]);
+    if (!error) {
+      alert(`NEURAL ENGINE: Jake has received the instruction.`);
+      setJakeCommand('');
+    }
   };
 
   if (!isLoggedIn) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-        <button onClick={() => setIsLoggedIn(true)} style={{ background: colors.accent, padding: '20px 40px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>AUTHORIZE BLACKTOP OS</button>
+        <div style={{ border: `2px solid ${colors.accent}`, padding: '80px', textAlign: 'center' }}>
+          <h1 style={{ color: colors.accent, letterSpacing: '20px', fontSize: '50px', margin: 0 }}>BLACKTOP</h1>
+          <p style={{ color: '#444', marginBottom: '40px' }}>SOVEREIGN OS v25 // JAKE & PAPI READY</p>
+          <button onClick={() => setIsLoggedIn(true)} style={authBtnStyle}>SYSTEM AUTHORIZATION</button>
+        </div>
       </div>
     );
   }
@@ -49,76 +52,101 @@ export default function App() {
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#000', color: '#fff', fontFamily: 'monospace' }}>
       
-      {/* SIDEBAR NAVIGATION */}
+      {/* SIDEBAR: 10 MODULES LOCKED */}
       <div style={{ width: '280px', background: colors.sidebar, borderRight: `1px solid ${colors.border}`, padding: '20px', display: 'flex', flexDirection: 'column' }}>
-        <h2 style={{ color: colors.accent }}>BLACKTOP OS</h2>
-        <div style={{ flex: 1, marginTop: '20px' }}>
-          {['Command Center', 'Control Tower', 'Driver Management', 'Asset Management', 'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet LIVE GPS'].map(r => (
-            <div key={r} onClick={() => setRoom(r)} style={{ padding: '12px', color: room === r ? colors.accent : '#555', cursor: 'pointer', borderLeft: room === r ? `3px solid ${colors.accent}` : 'none', fontSize: '11px', background: room === r ? '#111' : 'transparent' }}>{r.toUpperCase()}</div>
+        <h2 style={{ color: colors.accent, marginBottom: '30px' }}>BLACKTOP OS</h2>
+        <div style={{ flex: 1 }}>
+          {[
+            'Command Center', 'Control Tower', 'Driver Management', 'Asset Management', 
+            'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet LIVE GPS'
+          ].map(r => (
+            <div key={r} onClick={() => { setRoom(r); setSelectedLoad(null); }} style={navItemStyle(room === r, colors.accent)}>
+              {r.toUpperCase()}
+            </div>
           ))}
+        </div>
+        
+        {/* JAKE SIDEBAR INTERFACE */}
+        <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: '20px' }}>
+          <p style={{ color: colors.accent, fontSize: '10px', marginBottom: '10px' }}>NEURAL COMMAND (JAKE)</p>
+          <input value={jakeCommand} onChange={(e) => setJakeCommand(e.target.value)} style={jakeInputStyle} placeholder="Talk to Jake..." />
+          <button onClick={() => executeJake(jakeCommand)} style={jakeBtnStyle}>EXECUTE</button>
         </div>
       </div>
 
-      {/* MAIN WORKSPACE */}
+      {/* WORKSPACE AREA */}
       <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
-        
-        {/* COMMAND CENTER: JAKE'S NEURAL TERMINAL */}
+        <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '40px' }}>
+          <h1 style={{fontSize: '24px'}}>{room.toUpperCase()}</h1>
+          <div style={{ display: 'flex', gap: '15px' }}>
+             <input placeholder="Search..." style={topSearchStyle} />
+             <button style={actionBtnStyle}>+ ADD ENTRY</button>
+          </div>
+        </header>
+
+        {/* 1. COMMAND CENTER (JAKE'S MAIN HUB) */}
         {room === 'Command Center' && (
-          <div style={{ border: `1px solid ${colors.accent}`, padding: '40px', height: '80vh', display: 'flex', flexDirection: 'column', background: '#050505' }}>
-            <h1 style={{ color: colors.accent, marginBottom: '10px' }}>NEURAL COMMAND CENTER (JAKE)</h1>
-            <p style={{ color: '#444', marginBottom: '30px' }}>Direct Neural Interface Active</p>
-            <div style={{ flex: 1, background: '#000', padding: '20px', border: '1px solid #111', color: colors.accent, fontSize: '14px' }}>
-              <p>> JAKE STANDING BY...</p>
-              <p>> SYSTEM STATUS: OPTIMAL</p>
-              <p>> ALL FLOWS MONITORED</p>
-            </div>
-            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-              <input value={jakeCommand} onChange={(e) => setJakeCommand(e.target.value)} style={{ flex: 1, background: '#000', border: `1px solid ${colors.accent}`, color: '#fff', padding: '20px' }} placeholder="Issue Neural Command..." />
-              <button onClick={executeJake} style={{ background: colors.accent, color: '#000', border: 'none', padding: '0 40px', fontWeight: 'bold', cursor: 'pointer' }}>EXECUTE</button>
+          <div style={neuralTerminalStyle}>
+            <h2 style={{ color: colors.accent }}>NEURAL TERMINAL (JAKE)</h2>
+            <div style={terminalLogStyle}>
+              <p>> SYSTEM: ONLINE</p>
+              <p>> DATABASE: CONNECTED (PAPI ENGINE ACTIVE)</p>
+              <p>> WAITING FOR NEURAL INSTRUCTIONS...</p>
             </div>
           </div>
         )}
 
-        {/* CONTROL TOWER: LOAD BOARD & ENTRY GATE */}
+        {/* 2. CONTROL TOWER (LOAD BOARD + DRILL-DOWN) */}
         {room === 'Control Tower' && (
-          <>
-            <section style={{ background: '#111', padding: '25px', border: '1px solid #222', borderRadius: '4px' }}>
-              <h3 style={{ color: colors.accent, marginTop: 0 }}>GATEWAY: NEW LOAD ENTRY</h3>
-              <form onSubmit={handleSystemSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '15px', marginTop: '15px' }}>
-                <input required placeholder="Load #" style={inS} onChange={e => setNewEntry({...newEntry, load_number: e.target.value})} />
-                <input required placeholder="Customer" style={inS} onChange={e => setNewEntry({...newEntry, customer_name: e.target.value})} />
-                <input required placeholder="Rate ($)" style={inS} onChange={e => setNewEntry({...newEntry, rate: e.target.value})} />
-                <button type="submit" style={subB}>COMMIT TO SYSTEM</button>
-              </form>
-            </section>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '40px' }}>
-              <thead><tr style={{ textAlign: 'left', color: colors.accent, borderBottom: '2px solid #222' }}><th style={pad}>LOAD #</th><th style={pad}>CUSTOMER</th><th style={pad}>ORIGIN</th><th style={pad}>RATE</th><th style={pad}>STATUS</th><th style={pad}>DRILL</th></tr></thead>
-              <tbody>
-                {loads.map(l => (
-                  <tr key={l.id} style={{ borderBottom: '1px solid #111' }}>
-                    <td style={pad}>{l.load_number}</td><td style={pad}>{l.customer_name}</td><td style={pad}>{l.origin_city_state}</td><td style={pad}>${l.rate}</td><td style={pad}><span style={{color: colors.accent}}>ACTIVE</span></td><td style={pad}><button style={driB}>DRILL DOWN</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
+          <div>
+            {selectedLoad ? (
+              <div style={drillDownBoxStyle}>
+                <button onClick={() => setSelectedLoad(null)} style={backBtnStyle}> ➔ BACK TO LOAD BOARD</button>
+                <h2 style={{color: colors.accent}}>LOAD #{selectedLoad.load_number} - DRILL DOWN</h2>
+                <div style={detailGridStyle}>
+                  <div style={statBoxStyle}><strong>CUSTOMER:</strong> {selectedLoad.customer_name}</div>
+                  <div style={statBoxStyle}><strong>RATE:</strong> ${selectedLoad.rate}</div>
+                  <div style={statBoxStyle}><strong>ORIGIN:</strong> {selectedLoad.origin_city_state}</div>
+                  <div style={statBoxStyle}><strong>DESTINATION:</strong> {selectedLoad.destination_city_state}</div>
+                  <div style={statBoxStyle}><strong>ETA:</strong> CALCULATING...</div>
+                  <div style={statBoxStyle}><strong>STATUS:</strong> IN-TRANSIT</div>
+                </div>
+              </div>
+            ) : (
+              <table style={tableStyle}>
+                <thead><tr style={thStyle}><th>LOAD #</th><th>CUSTOMER</th><th>ROUTE</th><th>RATE</th><th>STATUS</th><th>DRILL</th></tr></thead>
+                <tbody>
+                  {loads.map(l => (
+                    <tr key={l.id} style={trStyle}>
+                      <td style={tdStyle}>{l.load_number}</td>
+                      <td style={tdStyle}>{l.customer_name}</td>
+                      <td style={tdStyle}>{l.origin_city_state} ➔ {l.destination_city_state}</td>
+                      <td style={tdStyle}>${l.rate}</td>
+                      <td style={tdStyle}><span style={{color: colors.accent}}>ACTIVE</span></td>
+                      <td style={tdStyle}><button onClick={() => setSelectedLoad(l)} style={drillBtnStyle}>VIEW DETAILS</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         )}
 
-        {/* FLEET GPS: SAMSARA STYLE 10-DAY HISTORY */}
+        {/* 3. FLEET LIVE GPS (10-DAY HISTORY) */}
         {room === 'Fleet LIVE GPS' && (
-          <div style={{ height: '70vh', border: '1px solid #222', background: '#050505', padding: '20px' }}>
-            <h2 style={{ color: colors.accent }}>FLEET LIVE GPS</h2>
-            <div style={{ height: '80%', border: '1px solid #111', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333' }}>
-              MAP ENGINE: [HISTORY_BUFFER_10_DAY] SEARCH ACTIVE
+          <div style={{ height: '70vh', background: '#050505', border: '1px solid #222', padding: '20px' }}>
+            <h3 style={{ color: colors.accent }}>LIVE TRACKING ENGINE</h3>
+            <div style={{ flex: 1, border: '1px solid #111', height: '80%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <p style={{color: '#333'}}>MAP VIEW: MICROPONT/SAMSARA INTEGRATION [10-DAY SEARCH ACTIVE]</p>
             </div>
           </div>
         )}
 
-        {/* OTHER ROOMS STANDBY */}
+        {/* 4. DRIVER/MAINTENANCE/COMPLIANCE/ACCOUNTING/CRM/FUEL (READY ROOMS) */}
         {!['Command Center', 'Control Tower', 'Fleet LIVE GPS'].includes(room) && (
-          <div style={{ padding: '60px', border: '1px solid #111', textAlign: 'center' }}>
-             <h2 style={{ color: colors.accent }}>{room.toUpperCase()} INTERFACE ONLINE</h2>
-             <p style={{ color: '#444' }}>Awaiting Data Stream...</p>
+          <div style={readyRoomStyle}>
+            <h2 style={{ color: colors.accent }}>{room.toUpperCase()} MODULE</h2>
+            <p style={{ color: '#444' }}>Awaiting Papi's Data Stream for validated entries.</p>
           </div>
         )}
       </div>
@@ -126,7 +154,22 @@ export default function App() {
   );
 }
 
-const inS = { background: '#000', border: '1px solid #333', color: '#fff', padding: '12px' };
-const subB = { background: '#32CD32', color: '#000', border: 'none', fontWeight: 'bold' as any, cursor: 'pointer' };
-const driB = { background: 'none', border: '1px solid #333', color: '#666', padding: '5px 10px', cursor: 'pointer', fontSize: '10px' };
-const pad = { padding: '15px 10px' };
+// --- CSS-IN-JS STYLING ---
+const authBtnStyle = { background: '#32CD32', color: '#000', border: 'none', padding: '20px 40px', fontWeight: 'bold' as any, cursor: 'pointer' };
+const navItemStyle = (active: boolean, acc: string) => ({ padding: '12px', color: active ? acc : '#555', cursor: 'pointer', borderLeft: active ? `3px solid ${acc}` : 'none', background: active ? '#111' : 'transparent', fontSize: '11px', marginBottom: '4px' });
+const jakeInputStyle = { width: '100%', background: '#111', border: '1px solid #333', color: '#fff', padding: '8px', fontSize: '11px' };
+const jakeBtnStyle = { width: '100%', background: '#222', color: '#32CD32', border: 'none', padding: '5px', marginTop: '5px', cursor: 'pointer', fontSize: '10px' };
+const topSearchStyle = { background: '#111', border: '1px solid #222', color: '#fff', padding: '10px', width: '250px' };
+const actionBtnStyle = { background: '#32CD32', color: '#000', border: 'none', padding: '10px 20px', fontWeight: 'bold' as any, cursor: 'pointer' };
+const neuralTerminalStyle = { border: '1px solid #32CD32', padding: '40px', height: '70vh', background: '#050505' };
+const terminalLogStyle = { background: '#000', border: '1px solid #111', padding: '20px', color: '#32CD32', height: '100%', overflowY: 'auto' as any };
+const drillDownBoxStyle = { background: '#111', padding: '30px', border: '1px solid #222' };
+const backBtnStyle = { color: '#32CD32', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '20px', fontWeight: 'bold' as any };
+const detailGridStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' };
+const statBoxStyle = { background: '#000', padding: '20px', border: '1px solid #222', fontSize: '14px' };
+const tableStyle = { width: '100%', borderCollapse: 'collapse' as any };
+const thStyle = { textAlign: 'left' as any, color: '#32CD32', borderBottom: '2px solid #222', padding: '10px' };
+const trStyle = { borderBottom: '1px solid #111' };
+const tdStyle = { padding: '15px 10px', fontSize: '13px' };
+const drillBtnStyle = { background: 'none', border: '1px solid #333', color: '#666', padding: '5px 10px', cursor: 'pointer', fontSize: '10px' };
+const readyRoomStyle = { padding: '80px', border: '1px solid #111', textAlign: 'center' as any };
