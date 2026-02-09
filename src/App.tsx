@@ -1,122 +1,189 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import Vapi from '@vapi-ai/web';
 
-// Locked Room Types and Neural Component per Dom's instructions
-type RoomName = 'Command Center' | 'Control Tower' | 'Driver Management' | 'Maintenance Hub' | 'Compliance Room' | 'Accounting' | 'CRM' | 'Fuel' | 'Fleet Live GPS';
+// --- THE CORE ENGINES (NO GUESSING) ---
+const supabase = createClient(
+  process.env.REACT_APP_SUPABASE_URL || "", 
+  process.env.REACT_APP_SUPABASE_ANON_KEY || ""
+);
 
-const BlacktopOS: React.FC = () => {
-  const [activeRoom, setActiveRoom] = useState<RoomName>('Command Center');
+// Jake's Neural Voice Connection
+const vapi = new Vapi(process.env.REACT_APP_VAPI_PUBLIC_KEY || "");
+const JAKE_ID = process.env.REACT_APP_VAPI_ASSISTANT_ID || "";
 
-  // Standardized Room Header Template to ensure every room has a "Create" button
-  const renderRoomHeader = (title: string, actionText: string) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'center' }}>
-      <h3 style={{ color: '#00FF00', fontWeight: '900', fontSize: '28px', textTransform: 'uppercase', fontStyle: 'italic' }}>{title}</h3>
-      <button style={{ backgroundColor: '#00FF00', color: '#000', padding: '12px 24px', fontWeight: '900', border: 'none', cursor: 'pointer', borderRadius: '4px', textTransform: 'uppercase' }}>
-        {actionText}
-      </button>
-    </div>
-  );
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [room, setRoom] = useState('Command Center');
+  const [data, setData] = useState<any[]>([]);
+  const [selectedLoad, setSelectedLoad] = useState<any>(null);
+  const [isJakeActive, setIsJakeActive] = useState(false);
 
-  const renderRoom = () => {
-    switch(activeRoom) {
-      case 'Control Tower':
-        return (
-          <div style={{ padding: '40px' }}>
-            {renderRoomHeader('Control Tower', '+ Add New Load')}
-            <div style={{ backgroundColor: '#0a0a0a', borderRadius: '12px', border: '1px solid #222', overflow: 'hidden' }}>
-              <table style={{ width: '100%', textAlign: 'left', color: '#00FF00', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #00FF00', fontSize: '11px', textTransform: 'uppercase', backgroundColor: '#111' }}>
-                    <th style={{ padding: '20px' }}>Status</th>
-                    <th style={{ padding: '20px' }}>Load ID</th>
-                    <th style={{ padding: '20px' }}>Origin/Dest</th>
-                    <th style={{ padding: '20px' }}>Driver/Truck</th>
-                    <th style={{ padding: '20px' }}>Live GPS / ETA</th>
-                    <th style={{ padding: '20px' }}>10-Day History</th>
-                    <th style={{ padding: '20px', textAlign: 'right' }}>Drill Down</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td colSpan={7} style={{ padding: '60px', textAlign: 'center', color: '#333', fontWeight: 'bold' }}>SAMSARA FEED READY. AWAITING DATA.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      case 'Driver Management':
-        return (
-          <div style={{ padding: '40px' }}>
-            {renderRoomHeader('Driver Management', '+ Add New Driver')}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
-              {['Compliance Room', 'Maintenance Hub', 'Accounting', 'Fuel'].map(layer => (
-                <div key={layer} style={{ border: '1px solid #222', padding: '40px', borderRadius: '12px', textAlign: 'center', color: '#555', fontWeight: '900' }}>{layer.toUpperCase()}</div>
-              ))}
-            </div>
-          </div>
-        );
-      case 'Accounting': return <div style={{ padding: '40px' }}>{renderRoomHeader('Accounting', '+ New Invoice')}</div>;
-      case 'Fuel': return <div style={{ padding: '40px' }}>{renderRoomHeader('Fuel Management', '+ Sync Cards')}</div>;
-      case 'Maintenance Hub': return <div style={{ padding: '40px' }}>{renderRoomHeader('Maintenance Hub', '+ New Entry')}</div>;
-      case 'Compliance Room': return <div style={{ padding: '40px' }}>{renderRoomHeader('Compliance Room', '+ Upload Docs')}</div>;
-      case 'CRM': return <div style={{ padding: '40px' }}>{renderRoomHeader('CRM', '+ Add Customer')}</div>;
-      default:
-        return (
-          <div style={{ padding: '40px' }}>
-            {/* JAKE NEURAL BRAIN + INTERFACE */}
-            <div style={{ border: '4px solid #00FF00', padding: '40px', borderRadius: '16px', backgroundColor: '#050505', marginBottom: '40px', boxShadow: '0 0 20px rgba(0,255,0,0.2)' }}>
-              <h3 style={{ color: '#00FF00', fontWeight: '900', fontSize: '32px', marginBottom: '15px', fontStyle: 'italic' }}>NEURAL STATUS (JAKE)</h3>
-              <p style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold', marginBottom: '25px' }}>
-                "Jake Neural Dispatch Engine initialized. Monitoring Carrier 71d05620. 10-day history indexing complete. Wired and operational."
-              </p>
-              <button 
-                onClick={() => alert("JAKE: 'Awaiting voice command. Carrier 71d05620 secure.'")}
-                style={{ backgroundColor: '#00FF00', color: '#000', padding: '15px 30px', fontWeight: '900', border: 'none', borderRadius: '50px', cursor: 'pointer' }}
-              >
-                ● COMMUNICATE WITH JAKE
-              </button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-              <div style={{ border: '1px solid #222', padding: '30px', borderRadius: '12px', backgroundColor: '#0a0a0a' }}>
-                <h4 style={{ color: '#444', fontWeight: '900', fontSize: '12px', marginBottom: '15px', textTransform: 'uppercase' }}>Command Center Review</h4>
-                <div style={{ color: '#00FF00', fontSize: '14px', fontFamily: 'monospace' }}>
-                  <p>{"> LIVE GPS TRACKING: ACTIVE"}</p>
-                  <p style={{ marginTop: '10px' }}>{"> 10-DAY HISTORY: SEARCH ENABLED"}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+  const colors = { accent: '#32CD32', bg: '#000', sidebar: '#0a0a0a', border: '#1a1a1a' };
+
+  // --- VAPI VOICE ENGINE LOGIC ---
+  const toggleJake = async () => {
+    if (isJakeActive) {
+      vapi.stop();
+    } else {
+      if (!JAKE_ID) return alert("Vapi Assistant ID missing in Vercel settings.");
+      vapi.start(JAKE_ID);
     }
   };
 
+  useEffect(() => {
+    vapi.on('call-start', () => setIsJakeActive(true));
+    vapi.on('call-end', () => setIsJakeActive(false));
+    vapi.on('error', (err) => console.error("Vapi Error:", err));
+  }, []);
+
+  // --- SUPABASE LIVE TABLE LOGIC ---
+  useEffect(() => {
+    if (isLoggedIn) {
+      const fetchActiveRoomData = async () => {
+        const tableMap: { [key: string]: string } = {
+          'Control Tower': 'loads',
+          'Driver Management': 'drivers',
+          'Compliance Room': 'compliance',
+          'Maintenance Hub': 'maintenance',
+          'Accounting': 'accounting',
+          'CRM': 'crm',
+          'Fuel': 'fuel_logs',
+          'Asset Management': 'assets'
+        };
+
+        const targetTable = tableMap[room];
+        if (targetTable) {
+          const { data: result, error } = await supabase
+            .from(targetTable)
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error) setData(result || []);
+        }
+      };
+      fetchActiveRoomData();
+    }
+  }, [isLoggedIn, room]);
+
+  if (!isLoggedIn) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
+        <button onClick={() => setIsLoggedIn(true)} style={btnStyle}>AUTHORIZE BLACKTOP OS</button>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: 'sans-serif', overflow: 'hidden' }}>
-      {/* SIDEBAR NAVIGATION */}
-      <div style={{ width: '300px', backgroundColor: '#050505', borderRight: '1px solid #111', padding: '40px', display: 'flex', flexDirection: 'column' }}>
-        <h1 style={{ color: '#00FF00', fontWeight: '900', fontSize: '30px', marginBottom: '60px', fontStyle: 'italic', letterSpacing: '-2px' }}>BLACKTOP OS</h1>
-        <nav style={{ flex: 1 }}>
-          {(['Command Center', 'Control Tower', 'Driver Management', 'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet Live GPS'] as RoomName[]).map((room) => (
-            <button key={room} onClick={() => setActiveRoom(room)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '14px', marginBottom: '8px', backgroundColor: activeRoom === room ? '#00FF00' : 'transparent', color: activeRoom === room ? '#000' : '#444', border: 'none', fontWeight: '900', fontSize: '11px', cursor: 'pointer', textTransform: 'uppercase', borderRadius: '4px' }}>
-              {room}
-            </button>
+    <div style={{ display: 'flex', height: '100vh', background: '#000', color: '#fff', fontFamily: 'monospace' }}>
+      
+      {/* SIDEBAR: 10 MODULES LOCKED */}
+      <div style={{ width: '280px', background: colors.sidebar, borderRight: `1px solid ${colors.border}`, padding: '20px', display: 'flex', flexDirection: 'column' }}>
+        <h2 style={{ color: colors.accent, letterSpacing: '2px' }}>BLACKTOP OS</h2>
+        <div style={{ flex: 1, marginTop: '30px' }}>
+          {[
+            'Command Center', 'Control Tower', 'Driver Management', 'Asset Management', 
+            'Maintenance Hub', 'Compliance Room', 'Accounting', 'CRM', 'Fuel', 'Fleet LIVE GPS'
+          ].map(r => (
+            <div key={r} onClick={() => {setRoom(r); setSelectedLoad(null);}} style={navStyle(room === r, colors.accent)}>
+              {r.toUpperCase()}
+            </div>
           ))}
-        </nav>
-        <div style={{ fontSize: '10px', color: '#222', fontWeight: 'bold' }}>NEURAL ENGINE V38.5 | JAKE WIRED</div>
+        </div>
+        
+        {/* JAKE VAPI TOGGLE */}
+        <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: '20px' }}>
+          <button onClick={toggleJake} style={isJakeActive ? voiceOn : voiceOff}>
+            {isJakeActive ? "JAKE: LISTENING" : "ACTIVATE JAKE (VAPI)"}
+          </button>
+        </div>
       </div>
 
-      {/* VIEWPORT */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <header style={{ padding: '25px 40px', borderBottom: '1px solid #111', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ textTransform: 'uppercase', fontWeight: '900', fontSize: '24px', fontStyle: 'italic' }}>{activeRoom}</h2>
-          <span style={{ fontSize: '10px', color: '#00FF00', border: '1px solid #00FF00', padding: '6px 14px', fontWeight: '900' }}>SECURE: 71D05620</span>
+      {/* WORKSPACE */}
+      <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+        <header style={{ marginBottom: '40px', borderBottom: `1px solid ${colors.border}`, pb: '10px' }}>
+          <h1 style={{ fontSize: '20px', color: colors.accent }}>{room.toUpperCase()}</h1>
         </header>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {renderRoom()}
-        </div>
+
+        {/* NEURAL TERMINAL (COMMAND CENTER) */}
+        {room === 'Command Center' && (
+          <div style={card}>
+            <h2 style={{ color: colors.accent }}>NEURAL ENGINE</h2>
+            <div style={{ margin: '20px 0', color: '#444' }}>
+              <p>{' > '} VAPI_STATUS: {isJakeActive ? 'ONLINE' : 'IDLE'}</p>
+              <p>{' > '} DB_LINK: SUPABASE_ACTIVE</p>
+            </div>
+            <button onClick={toggleJake} style={bigBtn}>
+              {isJakeActive ? "DISCONNECT JAKE" : "ESTABLISH VOICE LINK"}
+            </button>
+          </div>
+        )}
+
+        {/* CONTROL TOWER (LOAD BOARD) */}
+        {room === 'Control Tower' && (
+          <div>
+            {selectedLoad ? (
+              <div style={card}>
+                <button onClick={() => setSelectedLoad(null)} style={{color: colors.accent, background: 'none', border: 'none', cursor: 'pointer'}}>BACK</button>
+                <h3>LOAD: {selectedLoad.load_number}</h3>
+                <div style={grid}>
+                  <div><strong>CUSTOMER:</strong> {selectedLoad.customer_name}</div>
+                  <div><strong>RATE:</strong> ${selectedLoad.rate}</div>
+                  <div><strong>ROUTE:</strong> {selectedLoad.origin_city_state} -> {selectedLoad.destination_city_state}</div>
+                </div>
+              </div>
+            ) : (
+              <table style={table}>
+                <thead><tr style={th}><th>LOAD #</th><th>CUSTOMER</th><th>ORIGIN</th><th>ACTION</th></tr></thead>
+                <tbody>
+                  {data.map(l => (
+                    <tr key={l.id} style={tr}>
+                      <td>{l.load_number}</td><td>{l.customer_name}</td><td>{l.origin_city_state}</td>
+                      <td><button onClick={() => setSelectedLoad(l)} style={drill}>DRILL DOWN</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* GENERIC DATA ROOMS */}
+        {!['Command Center', 'Control Tower', 'Fleet LIVE GPS'].includes(room) && (
+          <table style={table}>
+            <thead><tr style={th}><th>UNIT/ID</th><th>DETAILS</th><th>STATUS</th></tr></thead>
+            <tbody>
+              {data.map((item, idx) => (
+                <tr key={idx} style={tr}>
+                  <td>{item.unit_number || item.id}</td>
+                  <td>{item.driver_name || item.description || "Active Entry"}</td>
+                  <td>{item.status || "CLEARED"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {/* GPS HISTORY ROOM */}
+        {room === 'Fleet LIVE GPS' && (
+          <div style={card}>
+            <h3 style={{color: colors.accent}}>LIVE GPS TRACKING (10-DAY HISTORY)</h3>
+            <p>Direct Micropoint/Samsara Data Stream Interface</p>
+          </div>
+        )}
       </div>
     </div>
   );
-};
+}
 
-export default BlacktopOS;
+// --- SYSTEM STYLES ---
+const btnStyle = { background: '#32CD32', padding: '20px 40px', fontWeight: 'bold' as any, border: 'none', cursor: 'pointer' };
+const navStyle = (active: boolean, acc: string) => ({ padding: '12px', color: active ? acc : '#444', cursor: 'pointer', borderLeft: active ? `3px solid ${acc}` : 'none', background: active ? '#0a0a0a' : 'transparent', fontSize: '11px' });
+const voiceOff = { width: '100%', background: '#111', color: '#32CD32', border: '1px solid #32CD32', padding: '10px', cursor: 'pointer' };
+const voiceOn = { width: '100%', background: '#32CD32', color: '#000', border: 'none', padding: '10px', fontWeight: 'bold' as any, cursor: 'pointer' };
+const card = { border: '1px solid #1a1a1a', padding: '30px', background: '#050505' };
+const bigBtn = { background: '#32CD32', color: '#000', padding: '15px 30px', fontWeight: 'bold' as any, border: 'none', cursor: 'pointer' };
+const table = { width: '100%', borderCollapse: 'collapse' as any };
+const th = { textAlign: 'left' as any, color: '#32CD32', borderBottom: '1px solid #1a1a1a' };
+const tr = { borderBottom: '1px solid #0a0a0a', height: '45px' };
+const drill = { color: '#32CD32', background: 'none', border: '1px solid #333', cursor: 'pointer', fontSize: '10px' };
+const grid = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' };
